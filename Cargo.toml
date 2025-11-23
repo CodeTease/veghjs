@@ -5,6 +5,7 @@ edition = "2024"
 authors = ["CodeTease"]
 description = "VeghJS - WASM binding for Vegh snapshot tool (Pure Rust)"
 license = "MIT"
+wasm-opt = false
 
 [lib]
 crate-type = ["cdylib", "rlib"]
