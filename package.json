@@ -1,7 +1,7 @@
 {
   "name": "veghjs",
-  "version": "0.1.0",
-  "description": "VeghJS - WebAssembly binding for Vegh (Core logic locked to v0.2.0). Fast snapshot inspection for Node/Browser.",
+  "version": "0.0.1",
+  "description": "VeghJS - WebAssembly binding for Vegh (Core logic locked to Vegh v0.2.0). Fast snapshot inspection for Node/Browser.",
   "license": "MIT",
   "author": "CodeTease",
   "type": "module",
@@ -23,7 +23,7 @@
   ],
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "wasm-pack build --target bundler --out-dir pkg --release",
+    "build": "wasm-pack build --target web --out-dir pkg --release",
     "prepublishOnly": "npm run build"
   },
   "files": [
