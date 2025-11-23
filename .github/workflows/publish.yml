@@ -33,7 +33,7 @@ jobs:
       - name: Force Update NPM (Critical for Trusted Publishing)
         run: |
           echo "Current NPM version: $(npm -v)"
-          npm install -g npm@latest
+          npm install -g npm@^11.5.1
           echo "Updated NPM version: $(npm -v)"
 
       # 3. Install & Build
@@ -45,4 +45,4 @@ jobs:
 
       # 4. Publish (Dùng OIDC - Không cần Secret NPM_TOKEN)
       - name: Publish to NPM
-        run: npm publish --provenance --access public
+        run: npm publish --access public
