@@ -1,48 +1,69 @@
-name: Publish VeghJS to NPM
+name: Publish VeghJS to NPM via OIDC
 
 on:
   push:
     tags:
-      - 'v*' # Chỉ chạy khi push tag (ví dụ: v0.1.0)
+      - 'v*' # Only runs when pushing a tag (e.g., v0.2.0)
+
+# 🚨 FIX 1: ADD GLOBAL ENV BLOCK (Matching the successful workflow)
+env:
+  NODE_VERSION: 22 
 
 permissions:
-  contents: read
-  id-token: write # QUAN TRỌNG: Bắt buộc có để dùng Trusted Publishing (OIDC)
+  contents: write # Required for 'npm version' to update package.json in CI runtime
+  id-token: write # CRITICAL: Required for Trusted Publishing (OIDC)
 
 jobs:
-  publish:
+  publish-npm:
     runs-on: ubuntu-latest
+    
+    # CRITICAL FIX 2: Set the environment context for OIDC
+    environment: npm 
+    
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+        with:
+          # Fetch full history is necessary for npm version to work correctly on tags
+          fetch-depth: 0 
 
-      # 1. Setup Rust & WASM-Pack (Để build)
+      # 1. Setup Rust & WASM-Pack (To build)
       - name: Install Rust Toolchain
         uses: dtolnay/rust-toolchain@stable
 
       - name: Install wasm-pack
         uses: jetli/wasm-pack-action@v0.4.0
 
-      # 2. Setup Node & CẬP NHẬT NPM (Theo yêu cầu của sếp)
-      - name: Setup Node.js
+      # 2. Setup Node.js & Configure Registry (Uses OIDC from the environment context)
+      - name: Setup Node.js & Configure Registry
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          # FIX 3: Use the ENV variable for consistency
+          node-version: ${{ env.NODE_VERSION }} 
           registry-url: 'https://registry.npmjs.org'
+      
+      # 3. CRITICAL FIX: Update NPM to the specific, tested version
+      - name: Update NPM
+        # Use specific, proven NPM version from the successful workflow
+        run: npm install -g npm@^11.5.1
 
-      - name: Force Update NPM (Critical for Trusted Publishing)
+      # 4. CRITICAL FIX: Synchronize package.json version with Git Tag
+      - name: Set Package Version from Git Tag
         run: |
-          echo "Current NPM version: $(npm -v)"
-          npm install -g npm@^11.5.1
-          echo "Updated NPM version: $(npm -v)"
+          TAG_NAME=${GITHUB_REF#refs/tags/}
+          VERSION=${TAG_NAME#v}
+          echo "--- Setting package version to: $VERSION ---"
+          npm version $VERSION --no-git-tag-version
 
-      # 3. Install & Build
-      - name: Install Dependencies
+      # 5. Clean Install Dependencies
+      - name: Clean Install Dependencies (npm ci)
         run: npm ci
 
+      # 6. Build WASM 
       - name: Build WASM (Release mode)
         run: npm run build
 
-      # 4. Publish (Dùng OIDC - Không cần Secret NPM_TOKEN)
+      # 7. Publish to NPM
       - name: Publish to NPM
+        # Use simple access public flag (Matching the successful workflow)
         run: npm publish --access public
