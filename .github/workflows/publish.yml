@@ -5,27 +5,24 @@ on:
     tags:
       - 'v*' # Only runs when pushing a tag (e.g., v0.2.0)
 
-# 🚨 FIX 1: ADD GLOBAL ENV BLOCK (Matching the successful workflow)
+# Global variables for consistency
 env:
   NODE_VERSION: 22 
 
 permissions:
-  contents: write # Required for 'npm version' to update package.json in CI runtime
+  contents: read # We rely on the committed package.json, so only read permission is needed.
   id-token: write # CRITICAL: Required for Trusted Publishing (OIDC)
 
 jobs:
   publish-npm:
     runs-on: ubuntu-latest
     
-    # CRITICAL FIX 2: Set the environment context for OIDC
+    # CRITICAL FIX: Set the environment context for OIDC (Matching the successful template)
     environment: npm 
     
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
-        with:
-          # Fetch full history is necessary for npm version to work correctly on tags
-          fetch-depth: 0 
 
       # 1. Setup Rust & WASM-Pack (To build)
       - name: Install Rust Toolchain
@@ -34,26 +31,18 @@ jobs:
       - name: Install wasm-pack
         uses: jetli/wasm-pack-action@v0.4.0
 
-      # 2. Setup Node.js & Configure Registry (Uses OIDC from the environment context)
+      # 2. Setup Node.js & Configure Registry
       - name: Setup Node.js & Configure Registry
         uses: actions/setup-node@v4
         with:
-          # FIX 3: Use the ENV variable for consistency
           node-version: ${{ env.NODE_VERSION }} 
           registry-url: 'https://registry.npmjs.org'
       
-      # 3. CRITICAL FIX: Update NPM to the specific, tested version
+      # 3. CRITICAL FIX: Update NPM to the specific, tested version (for OIDC stability)
       - name: Update NPM
-        # Use specific, proven NPM version from the successful workflow
         run: npm install -g npm@^11.5.1
 
-      # 4. CRITICAL FIX: Synchronize package.json version with Git Tag
-      - name: Set Package Version from Git Tag
-        run: |
-          TAG_NAME=${GITHUB_REF#refs/tags/}
-          VERSION=${TAG_NAME#v}
-          echo "--- Setting package version to: $VERSION ---"
-          npm version $VERSION --no-git-tag-version
+      # 4. REMOVED THE FAULTY 'npm version' STEP. We now trust package.json.
 
       # 5. Clean Install Dependencies
       - name: Clean Install Dependencies (npm ci)
@@ -65,5 +54,5 @@ jobs:
 
       # 7. Publish to NPM
       - name: Publish to NPM
-        # Use simple access public flag (Matching the successful workflow)
+        # We trust that the committed package.json contains the correct version (0.2.0)
         run: npm publish --access public
