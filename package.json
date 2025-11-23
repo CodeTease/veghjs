@@ -28,6 +28,9 @@
   },
   "files": [
     "pkg",
+    "pkg/vegh_js.js",     
+    "pkg/vegh_js.d.ts",     
+    "pkg/vegh_js_bg.wasm",
     "README.md",
     "LICENSE"
   ]
