@@ -1,3 +1,6 @@
+// CodeTease - VeghJS Core (Rust/WASM)
+// Validated for OOM prevention & Thread safety
+
 use wasm_bindgen::prelude::*;
 use serde::{Serialize, Deserialize};
 use std::io::{Cursor, Read};
@@ -43,20 +46,39 @@ pub fn get_library_info() -> Result<JsValue, JsValue> {
     Ok(serde_wasm_bindgen::to_value(&info)?)
 }
 
+// --- NEW FEATURE: STREAMING HASHER ---
+// Prevents OOM by processing chunks instead of loading the full file.
+// IMPORTANT: JS must call .free() on this object when done!
 #[wasm_bindgen]
-pub fn check_integrity(data: &[u8]) -> String {
-    let mut hasher = Sha256::new();
-    hasher.update(data);
-    hex::encode(hasher.finalize())
+pub struct VeghStreamingHasher {
+    hasher: Sha256,
 }
+
+#[wasm_bindgen]
+impl VeghStreamingHasher {
+    #[wasm_bindgen(constructor)]
+    pub fn new() -> VeghStreamingHasher {
+        VeghStreamingHasher {
+            hasher: Sha256::new(),
+        }
+    }
+
+    pub fn update(&mut self, chunk: &[u8]) {
+        self.hasher.update(chunk);
+    }
+
+    // Consumes the hasher and returns the hex string
+    pub fn finalize(self) -> String {
+        hex::encode(self.hasher.finalize())
+    }
+}
+
+// --- STANDARD FUNCTIONS (Worker Optimized) ---
 
 #[wasm_bindgen]
 pub fn get_metadata(data: &[u8]) -> Result<JsValue, JsValue> {
     let cursor = Cursor::new(data);
-    
-    // Tạo decoder từ cursor
     let decoder = StreamingDecoder::new(cursor).map_err(|e| JsValue::from_str(&e.to_string()))?;
-    
     let mut archive = Archive::new(decoder);
 
     for file in archive.entries().map_err(|e| JsValue::from_str(&e.to_string()))? {
@@ -78,10 +100,7 @@ pub fn get_metadata(data: &[u8]) -> Result<JsValue, JsValue> {
 #[wasm_bindgen]
 pub fn list_files(data: &[u8]) -> Result<JsValue, JsValue> {
     let cursor = Cursor::new(data);
-    
-    // Tạo decoder từ cursor
     let decoder = StreamingDecoder::new(cursor).map_err(|e| JsValue::from_str(&e.to_string()))?;
-    
     let mut archive = Archive::new(decoder);
     
     let mut entries = Vec::new();
