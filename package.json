@@ -1,6 +1,6 @@
 {
   "name": "vegh",
-  "version": "0.1.5",
+  "version": "0.3.0",
   "description": "VeghJS - WebAssembly binding for Vegh (Core logic synced to Vegh v0.3.0 FV2). Fast snapshot inspection for Node/Browser.",
   "license": "MIT",
   "author": "CodeTease",
