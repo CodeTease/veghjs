@@ -1,6 +1,6 @@
 [package]
 name = "vegh-js"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
 authors = ["CodeTease"]
 description = "VeghJS - WASM binding for Vegh snapshot tool (Pure Rust)"
@@ -16,10 +16,11 @@ wasm-bindgen = "0.2"
 serde-wasm-bindgen = "0.6"
 
 # Core Logic
-ruzstd = "0.7"   # <-- THÊM DÒNG NÀY (Pure Rust, không cần setup gì cả)
+ruzstd = "0.7"   
 tar = "0.4"
-sha2 = "0.10"
-hex = "0.4"
+# [SYNC] Replaced sha2 with blake3 to match Vegh Core 0.3.0
+# Using pure implementation for WASM compatibility
+blake3 = { version = "1.5", features = ["pure"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 

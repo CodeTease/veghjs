@@ -1,7 +1,7 @@
 {
   "name": "veghjs",
-  "version": "0.1.4",
-  "description": "VeghJS - WebAssembly binding for Vegh (Core logic locked to Vegh v0.2.0). Fast snapshot inspection for Node/Browser.",
+  "version": "0.2.0",
+  "description": "VeghJS - WebAssembly binding for Vegh (Core logic synced to Vegh v0.3.0 FV2). Fast snapshot inspection for Node/Browser.",
   "license": "MIT",
   "author": "CodeTease",
   "type": "module",

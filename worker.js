@@ -1,11 +1,10 @@
 // CodeTease - VeghJS Worker
-// Handles WASM operations in a background thread to keep UI responsive.
+// "The Thread" - Handles heavy lifting off-main-thread.
 
-import init, { VeghStreamingHasher, get_metadata, list_files } from "./pkg/vegh_js.js";
+import init, { VeghStreamingHasher, get_metadata, list_files, check_cache_hit, get_file_content } from "./pkg/vegh_js.js";
 
 let isReady = false;
 
-// Initialize WASM immediately upon worker creation
 (async () => {
     try {
         await init();
@@ -23,23 +22,35 @@ self.onmessage = async (e) => {
         return;
     }
 
-    const { command, file, chunk_size = 5 * 1024 * 1024 } = e.data; // 5MB chunks
+    const { command, payload } = e.data;
 
     try {
         switch (command) {
             case 'CHECK_INTEGRITY_STREAM':
-                if (!file) throw new Error("File is required");
-                await handleIntegrityStream(file, chunk_size);
+                // Payload: { file, chunkSize }
+                await handleIntegrityStream(payload.file, payload.chunkSize);
                 break;
 
             case 'GET_METADATA':
-                if (!file) throw new Error("File is required");
-                await handleMetadata(file);
+                // Payload: { file }
+                await handleMetadata(payload.file);
                 break;
 
             case 'LIST_FILES':
-                if (!file) throw new Error("File is required");
-                await handleListFiles(file);
+                // Payload: { file }
+                await handleListFiles(payload.file);
+                break;
+            
+            case 'CHECK_CACHE':
+                // Payload: { cacheObj, path, size, modified }
+                const isHit = check_cache_hit(payload.cacheObj, payload.path, BigInt(payload.size), BigInt(payload.modified));
+                postMessage({ type: 'RESULT_CACHE_HIT', payload: isHit });
+                break;
+
+            case 'GET_FILE_CONTENT':
+                // [NEW] Extract specific file content
+                // Payload: { file, path }
+                await handleGetFileContent(payload.file, payload.path);
                 break;
 
             default:
@@ -50,19 +61,11 @@ self.onmessage = async (e) => {
     }
 };
 
-/**
- * DOUBLE-CHECKED: Safe Memory Management
- * Uses VeghStreamingHasher to process file in chunks.
- * Explicitly frees Rust memory to prevent leaks.
- */
-async function handleIntegrityStream(file, chunkSize) {
+async function handleIntegrityStream(file, chunkSize = 5 * 1024 * 1024) {
     const totalBytes = file.size;
     let loadedBytes = 0;
     
-    // Create Rust instance
-    const hasher = new VeghStreamingHasher();
-    
-    // Use standard Web Stream API
+    let hasher = new VeghStreamingHasher();
     const reader = file.stream().getReader();
 
     try {
@@ -70,29 +73,19 @@ async function handleIntegrityStream(file, chunkSize) {
             const { done, value } = await reader.read();
             if (done) break;
 
-            // 'value' is Uint8Array, passed directly to WASM memory
             hasher.update(value);
-            
             loadedBytes += value.length;
             
-            // Send progress update
             const progress = (loadedBytes / totalBytes) * 100;
-            postMessage({ 
-                type: 'PROGRESS', 
-                payload: { task: 'integrity', progress } 
-            });
+            postMessage({ type: 'PROGRESS', payload: { task: 'integrity_blake3', progress } });
         }
 
-        // Finalize and get hash string
         const hash = hasher.finalize();
+        hasher = null; // Mark as consumed
+
         postMessage({ type: 'RESULT_INTEGRITY', payload: hash });
         
-    } catch (err) {
-        throw err;
     } finally {
-        // CRITICAL: Explicitly free Rust memory
-        // Even though finalize() consumes self in Rust, the JS wrapper might stick around.
-        // calling .free() is the safest bet in wasm-bindgen.
         if (hasher && hasher.free) {
             hasher.free();
         }
@@ -100,16 +93,28 @@ async function handleIntegrityStream(file, chunkSize) {
 }
 
 async function handleMetadata(file) {
-    // Note: Still loads to memory, but in Worker thread so UI won't freeze.
-    const arrayBuffer = await file.arrayBuffer();
-    const uint8Array = new Uint8Array(arrayBuffer);
-    const meta = get_metadata(uint8Array);
+    const buffer = await file.arrayBuffer();
+    const meta = get_metadata(new Uint8Array(buffer));
     postMessage({ type: 'RESULT_METADATA', payload: meta });
 }
 
 async function handleListFiles(file) {
-    const arrayBuffer = await file.arrayBuffer();
-    const uint8Array = new Uint8Array(arrayBuffer);
-    const list = list_files(uint8Array);
+    const buffer = await file.arrayBuffer();
+    const list = list_files(new Uint8Array(buffer));
     postMessage({ type: 'RESULT_FILES', payload: list });
+}
+
+// [NEW] Handler for extracting content
+async function handleGetFileContent(file, targetPath) {
+    const buffer = await file.arrayBuffer();
+    const content = get_file_content(new Uint8Array(buffer), targetPath);
+    
+    // Transferable objects optimization can be applied here if needed
+    postMessage({ 
+        type: 'RESULT_FILE_CONTENT', 
+        payload: { 
+            path: targetPath, 
+            data: content // This is a Uint8Array
+        } 
+    });
 }

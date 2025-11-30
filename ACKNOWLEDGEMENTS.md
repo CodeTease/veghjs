@@ -17,7 +17,11 @@ If you need to suppress this warning in non-interactive environments (such as CI
 node --no-warnings your_app.js
 ```
 
-## 2. Dependencies
+## 2. Architecture Note
+
+**Multithreading:** While Vegh uses `rayon` for massive parallelism, VeghJS relies on **Worker Offloading** and **BLAKE3's** efficient instruction set to achieve high performance in the browser's single-threaded WASM environment. This ensures compatibility with all hosting providers (no COOP/COEP headers required).
+
+## 3. Dependencies
 
 VeghJS is built upon the incredible work of the following pure Rust crates, ensuring no external C dependencies are required for compilation:
 
