@@ -27,10 +27,11 @@
     "prepublishOnly": "npm run build"
   },
   "files": [
-    "pkg",
     "pkg/vegh_js.js",     
     "pkg/vegh_js.d.ts",     
     "pkg/vegh_js_bg.wasm",
+    "pkg/vegh_js_bg.wasm.d.ts",
+    "worker.js",
     "README.md",
     "LICENSE"
   ]
