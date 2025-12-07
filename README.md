@@ -1,6 +1,6 @@
 # 🥬 VeghJS
 
-**VeghJS** is the high-performance WebAssembly (WASM) binding for the Vegh snapshot core, providing **near-native speed** for reading and verifying .snap files directly in the browser or Node.js.
+**VeghJS** is the high-performance WebAssembly (WASM) binding for the Vegh snapshot core, providing **near-native speed** for reading and verifying `.vegh` files directly in the browser or Node.js.
 
 The core logic is implemented in **Pure Rust (ruzstd, sha2)** and compiled to WASM, ensuring reliability and bypassing the need for C compilers. This version is locked to the stable Vegh core logic (**v0.3.0**), using **Format Version 2** (with backward compatibility for FV 1).
 
