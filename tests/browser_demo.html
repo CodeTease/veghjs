@@ -57,7 +57,7 @@
 
     <!-- Upload Section -->
     <div class="card full-width">
-        <input type="file" id="fileInput" accept=".snap" />
+        <input type="file" id="fileInput" accept=".vegh" />
         <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
             <button onclick="loadSnapshot()" id="btnLoad" disabled>📂 Load Snapshot</button>
             <button onclick="verifyIntegrity()" class="secondary" id="btnVerify" disabled>🛡️ Verify Integrity (BLAKE3)</button>
@@ -183,7 +183,7 @@
 
         window.loadSnapshot = () => {
             const fileInput = document.getElementById('fileInput');
-            if (!fileInput.files.length) return alert("Select a .snap file first!");
+            if (!fileInput.files.length) return alert("Select a .vegh file first!");
             
             currentFileObj = fileInput.files[0];
             
