@@ -1,3 +1,10 @@
 /target
 /node_modules
 Cargo.lock
+
+# Vegh core
+*.vegh
+.veghcache
+
+# PyVegh's Vegh Hooks
+.veghhooks.json
