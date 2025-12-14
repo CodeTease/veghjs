@@ -1,0 +1,51 @@
+name: VeghJS CI 🥬
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build-and-test:
+    name: Build & Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Install wasm-pack
+        uses: jetli/wasm-pack-action@v0.4.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Run Rust Tests
+        run: cargo test --lib --verbose
+
+      - name: Install NPM Deps
+        run: npm ci
+
+      - name: Build WASM Package
+        run: npm run build
+
+      - name: Verify Build Output
+        run: |
+          if [ -f "pkg/vegh_js.js" ] && [ -f "pkg/vegh_js_bg.wasm" ]; then
+            echo "Build successful."
+          else
+            echo "Build failed: Output files missing."
+            exit 1
+          fi
